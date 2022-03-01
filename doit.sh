@@ -1,12 +1,18 @@
 # bash script
 # recipe: https://levelup.gitconnected.com/build-an-express-api-with-sequelize-cli-and-express-router-963b6e274561
 
-rm -Rf .git* package* 
+rm  -f package* 
 rm -Rf config/ migrations/ models/ controllers/ seeders/ routes/
-#rm -Rf node_modules
-sync ## && sleep 2
+sync 
 
+# rm -Rf .git* 
+echo "
+/node_modules
+.DS_Store
+.env" >> .gitignore
 git init
+
+#rm -Rf node_modules
 npm init -y
 npm install --save mysql2 sequelize pg
 npm install -D sequelize-cli
@@ -14,19 +20,13 @@ npm install -D nodemon
 npm install --save body-parser # to handle info from user requests
 npm install --save express 
 
-echo "
-/node_modules
-.DS_Store
-.env" >> .gitignore
-
-rm -Rf config/ migrations/ models/ seeders/
 npx sequelize-cli init
 
 cat << CONFIG..CONFIG.JSON > config/config.json
 {
   "development": {
-    "username": "root",
-    "password": "bea",
+  "username": "root",
+  "password": "bea",
 	"database": "3T",
 	"host": "127.0.0.1",
 	"dialect": "mysql"
@@ -58,175 +58,142 @@ npx sequelize-cli db:create
 
 ## Models:
 
-## Cliente model:
-npx sequelize-cli model:generate --name Cliente \
---attributes firstName:string,lastName:string #,email:string,password:string
-npx sequelize-cli db:migrate
+## models: Cliente y Vehiculo
 
-# npx sequelize-cli seed:generate --name clientes
-cat << SEEDERS..0.USERS.JS > seeders/0-clientes.js
+npx sequelize-cli model:generate --name cliente \
+--attributes firstName:string,lastName:string #,email:string,password:string
+
+npx sequelize-cli model:generate --name vehiculo \
+--attributes modelo:string,anio:string,color:string
+
+#npx sequelize-cli seed:generate --name clientes
+cat << SEEDERS..0.CLIENTES.JS > seeders/0-clientes.js
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.bulkInsert('Clientes', [{
-      firstName: 'John',
-      lastName:  'Doe',
-      createdAt: new Date(),
-      updatedAt: new Date()
+    return queryInterface.bulkInsert('clientes', [{
+      firstName: 'John', lastName:  'Doe',
+      createdAt: new Date(), updatedAt: new Date()
     },
     {
-      firstName: 'John',
-      lastName:  'Smith',
-      createdAt: new Date(),
-      updatedAt: new Date()
+      firstName: 'John', lastName:  'Smith',
+      createdAt: new Date(), updatedAt: new Date()
     },
     {
-      firstName: 'John',
-      lastName:  'Stone',
-      createdAt: new Date(),
-      updatedAt: new Date()
+      firstName: 'John', lastName:  'Stone',
+      createdAt: new Date(), updatedAt: new Date()
     }], {});
   },  down: (queryInterface, Sequelize) => {
-    return queryInterface.bulkDelete('Clientes', null, {});
+    return queryInterface.bulkDelete('clientes', null, {});
   }
 };
-SEEDERS..0.USERS.JS
-
-## Vehiculo model:
-npx sequelize-cli model:generate --name Vehiculo \
---attributes modelo:string,anio:string,color:string
-npx sequelize-cli db:migrate
+SEEDERS..0.CLIENTES.JS
 
 # npx sequelize-cli seed:generate --name vehiculos
 cat << SEEDERS..0.VEHICULOS.JS > seeders/0-vehiculos.js
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.bulkInsert('Vehiculos', [{
-      modelo:   'Audi',
-      anio:     '2004',
-      color:    'negro',
-      createdAt: new Date(),
-      updatedAt: new Date()
+    return queryInterface.bulkInsert('vehiculos', [
+    {
+      modelo: 'Audi', anio: '2004', color: 'negro',
+      createdAt: new Date(), updatedAt: new Date()
     },
     {
-      modelo:   'BMW',
-      anio:     '2010',
-      color:    'Blanco',
-      createdAt: new Date(),
-      updatedAt: new Date()    },
+      modelo: 'BMW', anio: '2010', color: 'blanco',
+      createdAt: new Date(), updatedAt: new Date()
+    },
     {
-      modelo:   'Mercedes',
-      anio:     '2018',
-      color:    'negro',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }], {});
+      modelo: 'MB', anio: '2018', color: 'negro',
+      createdAt: new Date(), updatedAt: new Date()
+    }
+    ], {});
   },  down: (queryInterface, Sequelize) => {
-    return queryInterface.bulkDelete('Vehiculos', null, {});
+    return queryInterface.bulkDelete('vehiculos', null, {});
   }
 };
 SEEDERS..0.VEHICULOS.JS
 
-## Venta model:
-npx sequelize-cli model:generate --name Venta \
---attributes clienteId:integer,vehiculoId:integer
 npx sequelize-cli db:migrate
+# npx sequelize-cli db:seed:all  # mas tarde ...
 
-## set associations between the two models: cliente  n ventas )
-## set associations between the two models: vehiculo n ventas )
+## Venta model:
+npx sequelize-cli model:generate --name venta \
+--attributes clienteId:integer,vehiculoId:integer
+# npx sequelize-cli db:migrate
 
-cat << MODELS..CLIENTE.JS > models/cliente.js
-'use strict';
-const {
-  Model
-} = require('sequelize');
+# vinculamos vehiculos a ventas:
+# cat << MODELS..VEHICULO.JS > models/vehiculo.js
+# 'use strict';
+# const {
+#   Model
+# } = require('sequelize');
 
-module.exports = (sequelize, DataTypes) => {
-  const Venta = sequelize.define('Venta', {
-    clienteId:      DataTypes.INTEGER,
-  }, {});
+# module.exports = (sequelize, DataTypes) => {
+#   const Venta = sequelize.define('Venta', {
+#     vehiculoId:      DataTypes.INTEGER
+#   }, {});
 
-  Venta.associate = function (models) {
- 
-    Venta.belongsTo(models.Cliente, {
-        foreignKey: 'clienteId',
-        onDelete: 'CASCADE'
-    })
- 
-  };
-  return Venta;
-};
-MODELS..CLIENTE.JS
+#   Venta.associate = function (models) {
 
-cat << MODELS..VEHICULO.JS > models/vehiculo.js
-'use strict';
-const {
-  Model
-} = require('sequelize');
+#     Venta.belongsTo(models.Vehiculo, {
+#       foreignKey: 'vehiculoId',
+#       onDelete: 'CASCADE'
+#     })
 
-module.exports = (sequelize, DataTypes) => {
-  const Venta = sequelize.define('Venta', {
-    vehiculoId:      DataTypes.INTEGER
-  }, {});
-
-  Venta.associate = function (models) {
-
-    Venta.belongsTo(models.Vehiculo, {
-      foreignKey: 'vehiculoId',
-      onDelete: 'CASCADE'
-    })
-
-  };
-  return Venta;
-};
-MODELS..VEHICULO.JS
-
+#   };
+#   return Venta;
+# };
+# MODELS..VEHICULO.JS
 
 cat << MODELS..VENTA.JS > models/venta.js
 'use strict';
 const {
   Model
 } = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
+  class venta extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
 
-  const Cliente = sequelize.define('Cliente', {
-    firstName: DataTypes.STRING,
-    lastName:  DataTypes.STRING,
-  }, {});
+      // define association here
 
-  Cliente.associate = function (models) {
-    Cliente.hasMany(models.Venta, {
-      foreignKey: 'clienteId'
-    })
-  };
- 
-  return Cliente;
-};
-
-module.exports = (sequelize, DataTypes) => {
-
-  const Vehiculo = sequelize.define('Vehiculo', {
-    modelo: DataTypes.STRING,
-    anio: DataTypes.STRING,
-    color: DataTypes.STRING
-  }, {});
-
-  Vehiculo.associate = function (models) {
-    Vehiculo.hasMany(models.Venta, {
-      foreignKey: 'vehiculoId'
-    })
-  };
- 
-  return Vehiculo;
+      venta.belongsTo(models.cliente,     // new ...
+        {
+            as: 'cliente',
+            foreignKey: 'clienteId',
+        }
+      );
+      venta.belongsTo(models.juego,
+        {
+            as: 'vehiculo',
+            foreignKey: 'vehiculoId',
+        }
+      );                                // ... new
+    }
+  }
+  venta.init({
+    clienteId:  DataTypes.INTEGER,
+    vehiculoId: DataTypes.INTEGER
+  }, {
+    sequelize,
+    modelName: 'venta',
+  });
+  return venta;
 };
 MODELS..VENTA.JS
 
-# npx sequelize-cli seed:generate --name ventas
+#npx sequelize-cli seed:generate --name ventas
+
+rm migrations/*-create-venta.js # !!!!!!!
+
 cat << MIGRATIONS..0-CREATE-VENTA.JS > migrations/0-create-venta.js
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('Ventas', {
+    return queryInterface.createTable('ventas', {
 
       id: {
         allowNull:     false,
@@ -239,7 +206,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         onDelete: 'CASCADE',
         references: {
-          model: 'Clientes',
+          model: 'clientes',
           key:   'id',
           as:    'clienteId',
         }
@@ -249,7 +216,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         onDelete: 'CASCADE',
         references: {
-          model: 'Vehiculos',
+          model: 'vehiculos',
           key:   'id',
           as:    'vehiculoId',
         }
@@ -268,7 +235,7 @@ module.exports = {
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('Ventas');
+    return queryInterface.dropTable('ventas');
   }
 };
 MIGRATIONS..0-CREATE-VENTA.JS
@@ -279,32 +246,24 @@ npx sequelize-cli db:migrate
 cat << SEEDERS..0.VENTAS.JS > seeders/0-ventas.js
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.bulkInsert('Ventas', [{
-      clienteId: 1,
-      vehiculoId: 1,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    return queryInterface.bulkInsert('ventas', [{
+      clienteId:  1, vehiculoId: 1,
+      createdAt: new Date(), updatedAt: new Date()
     },
     {
-      clienteId: 3,
-      vehiculoId: 1,      
-      createdAt: new Date(),
-      updatedAt: new Date()
+      clienteId:  3, vehiculoId: 1,      
+      createdAt: new Date(), updatedAt: new Date()
     },
     {
-      clienteId: 2,
-      vehiculoId: 1,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      clienteId:  2, vehiculoId: 2,
+      createdAt: new Date(), updatedAt: new Date()
     },
     {
-      clienteId: 1,
-      vehiculoId: 1,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      clienteId:  1, vehiculoId: 1,
+      createdAt: new Date(), updatedAt: new Date()
     }], {});
   },  down: (queryInterface, Sequelize) => {
-    return queryInterface.bulkDelete('Ventas', null, {});
+    return queryInterface.bulkDelete('ventas', null, {});
   }
 };
 SEEDERS..0.VENTAS.JS
@@ -315,43 +274,40 @@ npx sequelize-cli db:seed:all
 mysql -u root -pbea -e "\
 
 use 3T;
-drop table if exists Venta;
-
-SELECT id, firstName , lastName FROM Clientes;
-SELECT id, modelo, anio, color  FROM Vehiculos;
-SELECT id, clienteId  FROM Ventas ORDER BY id;
-SELECT id, vehiculoId FROM Ventas ORDER BY id;
+SELECT id, firstName , lastName FROM clientes;
+SELECT id, modelo, anio, color  FROM vehiculos;
+SELECT id, clienteId  FROM ventas ORDER BY id;
+SELECT id, vehiculoId FROM ventas ORDER BY id;
 
 SELECT * 
-FROM Ventas JOIN Clientes 
-ON Ventas.clienteId = Clientes.id
-ORDER BY Ventas.id;
+FROM ventas JOIN clientes 
+ON ventas.clienteId = clientes.id
+ORDER BY ventas.id;
 -- 
-SELECT Ventas.id as 'v.id', Ventas.clienteID as 'fk', Clientes.id as 'Cl.id'
-FROM Ventas JOIN Clientes 
-ON Ventas.clienteId = Clientes.id
-ORDER BY Ventas.id;
+SELECT ventas.id as 'v.id', ventas.clienteID as 'fk', clientes.id as 'cl.id'
+FROM ventas JOIN clientes 
+ON ventas.clienteId = clientes.id
+ORDER BY ventas.id;
 --
 SELECT *
-FROM Ventas JOIN Vehiculos
-ON Ventas.vehiculoId = Vehiculos.id
-ORDER BY Ventas.id;
+FROM ventas JOIN vehiculos
+ON ventas.vehiculoId = vehiculos.id
+ORDER BY ventas.id;
 --
-SELECT Ventas.id as 'v.id', Ventas.vehiculoID as 'fk', Vehiculos.id as 'Veh.id'
-FROM Ventas JOIN Vehiculos
-ON Ventas.vehiculoId = Vehiculos.id
-ORDER BY Ventas.id;
+SELECT ventas.id as 'v.id', ventas.vehiculoID as 'fk', vehiculos.id as 'veh.id'
+FROM ventas JOIN vehiculos
+ON ventas.vehiculoId = vehiculos.id
+ORDER BY ventas.id;
 --
 --
 "
-
 # use Express; set up routes ------------------------------------------
 
 mkdir routes controllers
 touch server.js  routes/index.js controllers/index.js
 
 # update package.json
-cat << PJS > package.json
+cat << PACKAGE.JSON > package.json
 {
   "name": "exp-api",
   "version": "1.0.0",
@@ -377,25 +333,26 @@ cat << PJS > package.json
     "sequelize-cli": "^6.4.1"
   }
 }
-PJS
+PACKAGE.JSON
 
 cat << ROUTES..INDEX.JS > routes/index.js
 const { Router } = require('express');
 const controllers = require('../controllers');
-const router = Router();router.get('/', (req, res) => res.send('HOME! '))
+const router = Router();
 
+router.get( '/', (req, res) => res.send('HOME! '))
 router.post('/clientes', controllers.createCliente)
 
 module.exports = router
 ROUTES..INDEX.JS
 
 cat << SERVER.JS > server.js
-const     express = require('express');
+const    express = require('express');
 const     routes = require('./routes');
 const bodyParser = require('body-parser')
 
 const PORT = process.env.PORT || 3000;
-const app = express();
+const  app = express();
 app.use(bodyParser.json());
 app.use('/api', routes);
 app.listen(PORT, () => console.log('escucha en puerto' , PORT))
@@ -419,3 +376,6 @@ module.exports = {
     createCliente
 }
 CONTROLLERS..INDEX.JS
+
+# echo "BYE----" && exit 0 
+## ###############################################################

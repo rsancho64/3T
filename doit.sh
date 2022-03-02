@@ -14,10 +14,8 @@ npm install --save sequelize pg
 npm install -D mysql2 sequelize-cli
 npm install -D nodemon 
 
-rm -Rf config/ migrations/ seeders/
+rm -Rf config/ migrations/ seeders/ models/
 rm -Rf routes/ controllers/
-
-exit 0
 
 npx sequelize-cli init
 
@@ -85,9 +83,6 @@ npx sequelize-cli db:create
 npx sequelize-cli model:generate --name user \
  --attributes firstName:string,lastName:string
 #--attributes firstName:string,lastName:string,email:string,password:string
-
-echo "BYE--"
-exit 0 # ###########################################################
 
 npx sequelize-cli db:migrate
 
@@ -172,7 +167,7 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class project extends Model {
     static associate(models) {              // new ...
-      project.belongsTo(models.User, {
+      project.belongsTo(models.user, {
         foreignKey: 'userId',
         onDelete: 'CASCADE'
       })
@@ -261,12 +256,94 @@ select id, userID, title from projects;
 -- select * from users JOIN projects ON users.id = projects.userId;
 "
 
-# Setting up Express #################################################33
+# ++ express, rutes,.. ##############################################
 
 npm install --save express body-parser 
 npm install -D nodemon
 
-
 mkdir routes controllers
 touch server.js routes/index.js controllers/index.js
 
+cat << PACKAGE.JSON > package.json
+{
+  "name": "3t",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js",
+    "db:reset": "npx sequelize-cli db:drop && npx sequelize-cli db:create && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pg": "^8.7.3",
+    "sequelize": "^6.17.0"
+  },
+  "devDependencies": {
+    "mysql2": "^2.3.3",
+    "nodemon": "^2.0.15",
+    "sequelize-cli": "^6.4.1"
+  }
+}
+PACKAGE.JSON
+
+cat << SERVER.JS > server.js
+const    express = require('express');
+const     routes = require('./routes');
+const bodyParser = require('body-parser')
+const PORT = process.env.PORT || 3000;
+const app = express();
+app.use(bodyParser.json())
+app.use('/api', routes);
+app.listen(PORT, () => console.log("listening on port: ", '${PORT}'))
+SERVER.JS
+
+cat << ROUTES..INDEX.JS > routes/index.js
+const { Router } = require('express');
+const controllers = require('../controllers');
+const router = Router();
+router.get( '/', (req, res) => res.send('This is root!'))
+router.post('/users', controllers.createUser)
+router.get( '/users', controllers.getAllUsers)
+module.exports = router
+ROUTES..INDEX.JS
+
+cat << CONTROLLERS.INDEX.JS > controllers/index.js
+const { user } = require('../models');
+const { project } = require('../models');
+const createUser = async (req, res) => {
+    try {
+        const user = await user.create(req.body);
+        return res.status(201).json({
+            user,
+        });
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+}
+
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await user.findAll({
+            include: [
+                {
+                    model: project
+                }
+            ]
+        });
+        return res.status(200).json({ users });
+    } catch (error) {
+        return res.status(500).send(error.message);
+    }
+}
+module.exports = {
+    createUser,
+    getAllUsers
+}
+CONTROLLERS.INDEX.JS
+
+echo "BYE--"
+exit 0 # ###########################################################
